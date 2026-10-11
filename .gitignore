@@ -1,0 +1,13 @@
+node_modules/
+test-results/
+dist/
+.DS_Store
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.log
+web-ext-artifacts/
+raw-data/*
+!raw-data/README.md

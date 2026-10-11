@@ -1,0 +1,21 @@
+{
+  "name": "oflc-wage-lens",
+  "version": "1.2.0",
+  "license": "MIT",
+  "private": true,
+  "description": "Local Firefox wage benchmark overlay for Software Developers",
+  "engines": { "node": ">=22.15.0" },
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "node tests/browser.cjs",
+    "test:monitor-browser": "node tests/monitor-browser.cjs",
+    "test:extension": "node tests/extension-smoke.cjs",
+    "test:package": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "build:assets": "node scripts/build_assets.cjs",
+    "check": "npm test && npm run test:package && npm run lint:extension && npm run test:browser && npm run test:monitor-browser && npm run test:extension",
+    "lint:extension": "web-ext lint --source-dir extension --warnings-as-errors",
+    "package": "python3 scripts/package.py"
+  },
+  "devDependencies": { "playwright": "1.62.1", "web-ext": "10.7.0", "lucide": "1.8.0", "sharp": "0.35.5" },
+  "overrides": { "fx-runner": { "shell-quote": "1.12.0" } }
+}

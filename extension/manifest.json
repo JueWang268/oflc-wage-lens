@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "OFLC Wage Lens",
+  "version": "1.2.0",
+  "description": "Compare job-post salaries with bundled OFLC Software Developer wage levels. All salary analysis stays on your device.",
+  "permissions": ["activeTab", "scripting", "storage", "alarms"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {"scripts": ["monitor.js", "background.js"]},
+  "action": {"default_title": "Show or hide OFLC Wage Lens", "default_icon": "icons/icon-48.png"},
+  "icons": {"48": "icons/icon-48.png", "96": "icons/icon-96.png"},
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["core.js", "icons.js", "content.js"],
+    "run_at": "document_idle"
+  }],
+  "browser_specific_settings": {"gecko": {
+    "id": "oflc-wage-lens@juewang.local",
+    "strict_min_version": "142.0",
+    "data_collection_permissions": {"required": ["none"]}
+  }}
+}

@@ -1,0 +1,48 @@
+name: Extension checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=moderate
+      - name: Development dependency audit (known upstream advisory in SECURITY.md)
+        continue-on-error: true
+        run: npm audit --audit-level=moderate
+      - run: npm run build:assets
+      - name: Verify generated assets are committed
+        run: git diff --exit-code -- extension/
+      - run: npx playwright install --with-deps firefox
+      - name: Unit, packaging, lint and browser checks
+        run: |
+          npm test
+          npm run test:package
+          npm run lint:extension
+          npm run test:browser
+          npm run test:monitor-browser
+      - name: Real temporary Firefox add-on
+        run: |
+          export TEST_FIREFOX="$(node -e "process.stdout.write(require('playwright').firefox.executablePath())")"
+          npm run test:extension
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-firefox-extension
+          path: dist/*.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-screenshots
+          path: test-results/*.png
+          if-no-files-found: ignore
