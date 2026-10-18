@@ -2,6 +2,22 @@
 
 A Firefox extension for comparing a job's USD base salary with the 2026-27 OFLC wage levels for **Software Developers, O*NET 15-1252.00 / SOC 15-1252**. The panel appears at the top right of detected job pages. The toolbar button toggles it on other pages.
 
+## County map website
+
+**[Open Wage Atlas](https://juewang268.github.io/oflc-wage-lens/)**
+
+The open-source companion in [`website/`](website/README.md) maps a base salary
+across 3,144 counties and county equivalents in all 50 states and DC. Five bands
+run from deep red (below Level I) through red, yellow and light green to green
+(Level IV or above). There is no Level V. Selecting a county shows all four
+thresholds, with annual/hourly controls, state filtering, county search and CSV export.
+
+Run `node website/scripts/serve.cjs`, then open http://127.0.0.1:4178.
+The website uses the October 2026 OFLC snapshot and 2025 Census boundaries;
+county polygons inherit their OFLC wage-area rates. It reuses the extension's
+classification logic, does not change the extension, and does not automatically
+download new wages. See the website README for rebuilding and testing.
+
 ## Install in Firefox
 
 1. In Firefox 142 or later, open `about:debugging#/runtime/this-firefox`.

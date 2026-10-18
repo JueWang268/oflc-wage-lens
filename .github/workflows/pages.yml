@@ -1,0 +1,81 @@
+name: Wage Atlas Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/pages.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - 'website/**'
+      - '.github/workflows/pages.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wage-atlas-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Wage thresholds and county joins
+        run: node --test website/tests/map.test.cjs
+      - run: npx playwright install --with-deps firefox
+      - name: Desktop and mobile Firefox checks
+        env:
+          PLAYWRIGHT_MODULE: ${{ github.workspace }}/node_modules/playwright
+        run: |
+          node website/scripts/serve.cjs &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4178/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node website/tests/browser.cjs
+      - name: Browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wage-atlas-screenshots
+          path: website/test-results/*.png
+          if-no-files-found: ignore
+      - name: Package static website only
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Publish Wage Atlas
+        id: deployment
+        uses: actions/deploy-pages@v4

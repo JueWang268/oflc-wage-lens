@@ -1,0 +1,13 @@
+{
+  "name": "oflc-wage-atlas",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "test": "node --test tests/map.test.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "engines": {"node": ">=22"},
+  "devDependencies": {"playwright": "1.62.1"}
+}

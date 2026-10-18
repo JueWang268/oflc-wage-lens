@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Compare a software developer salary against four OFLC wage benchmarks in every U.S. county.">
+  <title>OFLC Wage Atlas</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="vendor/d3.min.js"></script><script defer src="vendor/lucide.min.js"></script>
+  <script defer src="wage-core.js"></script><script defer src="map-core.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+  <header class="masthead"><div class="brand"><i data-lucide="map" aria-hidden="true"></i><h1>Wage Atlas</h1><span class="brand-rule"></span><span class="subtitle">OFLC / Software Developers</span></div><span id="vintage" class="vintage">2026–27</span></header>
+  <div id="notice" role="status" hidden></div>
+  <section class="toolbar" aria-label="Map filters">
+    <div class="salary-control"><label for="salary">Base salary</label><div class="salary-row"><span>$</span><input id="salary" type="number" value="120000" min="0.01" max="10000000" step="1000" inputmode="decimal" aria-describedby="salary-error"><div class="segmented" aria-label="Pay period"><button id="year" aria-pressed="true">/ year</button><button id="hour" aria-pressed="false">/ hour</button></div></div><span id="salary-error" role="alert" hidden>Enter a positive salary up to $10 million/year.</span></div>
+    <div class="slider-control"><label for="salary-range" id="equivalent">$57.69 / hour</label><input id="salary-range" type="range" min="40000" max="350000" value="120000" step="500" aria-label="Annual base salary"><div class="slider-labels"><span>$40k</span><span id="slider-max">$350k</span></div></div>
+    <div class="state-control"><label for="state">State</label><select id="state"><option value="">United States</option></select></div>
+    <div class="search-control"><label for="county-search">County</label><input id="county-search" type="search" list="county-list" placeholder="County name or state" autocomplete="off"><datalist id="county-list"></datalist></div>
+  </section>
+  <main>
+    <section class="map-section" aria-labelledby="map-title">
+      <div class="map-heading"><div><p class="eyebrow">COUNTY-LEVEL COMPARISON</p><h2 id="map-title">Software developer wages</h2></div><div class="map-controls"><button id="zoom-in" title="Zoom in" aria-label="Zoom in"><i data-lucide="plus"></i></button><button id="zoom-out" title="Zoom out" aria-label="Zoom out"><i data-lucide="minus"></i></button><button id="reset" title="Reset map" aria-label="Reset map"><i data-lucide="maximize"></i></button></div></div>
+      <section class="legend" aria-label="Wage comparison legend" id="legend"></section>
+      <div class="map-wrap"><p id="loading" role="status">Loading county wages…</p><svg id="map" viewBox="0 0 1000 640" role="img" aria-label="County wage comparison map. County search provides the same details by keyboard."></svg><div id="tooltip" hidden></div></div>
+      <div class="map-caption"><span id="coverage"></span><button id="download" class="text-button"><i data-lucide="download"></i>County CSV</button></div>
+      <div class="legend-note"><span><b class="missing-dot"></b>Unavailable / unmatched</span><span>Equal to a threshold enters the higher band.</span></div>
+    </section>
+    <aside class="detail" aria-labelledby="county-name">
+      <p class="eyebrow" id="selected-state">SELECTED COUNTY</p><h2 id="county-name">New York County</h2><p class="wage-area" id="wage-area"></p>
+      <div id="result" aria-live="polite"><span id="result-label">Loading…</span><strong id="result-pay"></strong></div>
+      <div class="threshold-heading"><h3>Wage thresholds</h3><span id="threshold-unit">Annual</span></div><div id="thresholds"></div>
+      <p id="next-level" class="next-level"></p>
+      <div class="area-note"><i data-lucide="map-pin" aria-hidden="true"></i><p>County geography, wage-area rates. Counties in the same OFLC area share the same thresholds.</p></div>
+      <dl class="metadata"><div><dt>Occupation</dt><dd>Software Developers</dd></div><div><dt>O*NET</dt><dd>15-1252.00</dd></div><div><dt>Industry</dt><dd>All industries</dd></div><div><dt>Annual hours</dt><dd>2,080</dd></div></dl>
+    </aside>
+  </main>
+  <footer><div><strong>OFLC 2026–27</strong><span id="validity">July 1, 2026 – June 30, 2027</span><span>Snapshot: October 2026</span></div><div><a href="https://flag.dol.gov/wage-data/wage-data-downloads" target="_blank" rel="noopener noreferrer">DOL wage data ↗</a><a href="methodology.html">Data & methodology</a></div><p>Salary comparison only, not an official prevailing wage determination or visa eligibility assessment. Base pay excludes bonus & equity.</p></footer>
+</body></html>

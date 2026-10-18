@@ -1,0 +1,9 @@
+node_modules/
+test-results/
+.DS_Store
+*.tar.gz
+*.zip.tmp
+.openai/
+# These are the actual static website assets, not extension release archives.
+!dist/
+!dist/**
