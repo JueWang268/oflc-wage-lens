@@ -1,20 +1,22 @@
-/* All comparisons remain local. WageLensCore is shared with the extension. */
+/* All comparisons remain local. Each occupation's public wage file loads on demand. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const {bands, tier, thresholds, distribution, validSalary} = WageMapCore;
+  const {bands, tier, thresholds, distribution, validSalary, occupationOptions, findOccupations, unavailableReason} = WageMapCore;
   const money = (n, hourly=false) => new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', minimumFractionDigits:hourly||Math.abs(n-Math.round(n))>0.000001?2:0, maximumFractionDigits:2}).format(n);
   const compact = n => new Intl.NumberFormat('en-US',{notation:'compact', maximumFractionDigits:1}).format(n);
   const params = new URLSearchParams(location.search);
   let salary = params.has('salary') && validSalary(Number(params.get('salary'))) ? Number(params.get('salary')) : 120000;
   let unit = 'year', state = '', selected, data, counties, paths, projection, path, layer, zoom, svg;
-  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.map-controls button,#download')];
+  let catalog, options, occupation, wageAreas={}, occupationBusy=false, occupationError=false, loadSerial=0;
+  const wageCache=new Map();
+  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.occupation-bar input,.occupation-bar select,.map-controls button,#download')];
   controls.forEach(el => el.disabled = true);
   lucide.createIcons();
 
   function updateUrl() {
-    if (!validSalary(salary)) return;
-    const q = new URLSearchParams({salary:String(salary),county:selected.id});
+    if (!validSalary(salary) || !occupation || occupationBusy || occupationError) return;
+    const q = new URLSearchParams({salary:String(salary),county:selected.id,occupation:occupation.code});
     if (state) q.set('state',state);
     history.replaceState(null,'',`${location.pathname}?${q}`);
   }
@@ -39,7 +41,7 @@
     const valid = validSalary(salary);
     $('salary-error').hidden = valid;
     $('salary').setAttribute('aria-invalid',String(!valid));
-    $('download').disabled = !valid;
+    $('download').disabled = !valid || occupationBusy || occupationError;
     $('equivalent').textContent = valid ? (unit === 'year' ? `${money(salary/2080,true)} / hour` : `${money(salary)} / year`) : 'Salary unavailable';
     if (valid) {
       const max = Math.max(350000,Math.ceil(salary/50000)*50000);
@@ -48,10 +50,10 @@
       $('salary-range').value = salary;
     }
     paths.attr('fill', f => {
-      const value = tier(salary,data.areas[f.properties.area]);
+      const value = tier(salary,wageAreas[f.properties.area]);
       return value === null ? '#cbd0ce' : bands[value].color;
     }).attr('opacity',f => !state || f.properties.state===state ? 1 : 0.17);
-    const stats = distribution(counties,data.areas,salary,state);
+    const stats = distribution(counties,wageAreas,salary,state);
     const fragment = document.createDocumentFragment();
     bands.forEach((band,i) => {
       const item = document.createElement('div'); item.className='legend-item';
@@ -66,11 +68,11 @@
     updateDetail(); updateUrl();
   }
   function updateDetail() {
-    const p = selected.properties, area=data.areas[p.area], level=tier(salary,area), rates=thresholds(area);
+    const p = selected.properties, area=wageAreas[p.area], level=tier(salary,area), rates=thresholds(area);
     $('selected-state').textContent=`${data.states[p.state].toUpperCase()} / ${selected.id}`;
     $('county-name').textContent=p.name;
-    $('wage-area').textContent=area?.name || 'No unambiguous OFLC wage-area match';
-    $('result-label').textContent=level === null ? (validSalary(salary)?'Wage data unavailable':'Enter a valid salary') : bands[level].label;
+    $('wage-area').textContent=data.areas[p.area]?.name || 'No unambiguous OFLC wage-area match';
+    $('result-label').textContent=occupationBusy?'Loading occupation…':occupationError?'Occupation data unavailable':level === null ? (validSalary(salary)?'Wage data unavailable':'Enter a valid salary') : bands[level].label;
     $('result-pay').textContent=validSalary(salary)?`${money(unit==='year'?salary:salary/2080,unit==='hour')}${unit==='year'?'/yr':'/hr'}`:'Unavailable';
     $('result').style.background=level===null?'#edf0ed':bands[level].color;
     $('result').style.color=level===null?'#35483d':bands[level].ink;
@@ -80,17 +82,18 @@
       const row=document.createElement('div'); row.className='threshold';
       const labels=document.createElement('div'); labels.className='threshold-values';
       const label=document.createElement('span'); label.textContent=`Level ${roman}`;
-      const value=document.createElement('strong'); value.textContent=rates?money(unit==='year'?rates[i]:area.levels[i],unit==='hour'):'Unavailable';
+      const value=document.createElement('strong'); value.textContent=rates?money(unit==='year'?rates[i]:rates[i]/2080,unit==='hour'):'Unavailable';
       labels.append(label,value);
       const track=document.createElement('div'); track.className='threshold-track';
       const fill=document.createElement('span'); fill.style.width=rates?`${rates[i]/rates[3]*100}%`:'0'; fill.style.background=bands[i+1].color;
       track.append(fill); row.append(labels,track); fragment.append(row);
     });
     $('thresholds').replaceChildren(fragment);
-    if (level===null) $('next-level').textContent='No wage level inferred.';
+    if (level===null) $('next-level').textContent=occupationBusy?'Loading wage thresholds.':occupationError?'Retry loading this occupation to compare wages.':!validSalary(salary)?'No wage level inferred.':unavailableReason(area);
     else if (level===4) $('next-level').textContent=`${money((salary-rates[3])/(unit==='year'?1:2080),unit==='hour')} above the Level IV threshold. OFLC has no Level V.`;
     else $('next-level').textContent=`${money((rates[level]-salary)/(unit==='year'?1:2080),unit==='hour')} ${unit==='year'?'per year':'per hour'} to reach Level ${['I','II','III','IV'][level]}.`;
     paths.classed('selected',f=>f.id===selected.id).filter(f=>f.id===selected.id).raise();
+    $('source-unit').textContent=area?.unit==='year'?'Annual (hourly equivalent)':area?.unit==='hour'?'Hourly':'Unavailable';
   }
   function focusFeature(feature) {
     const [[x0,y0],[x1,y1]]=path.bounds(feature);
@@ -106,7 +109,7 @@
     if (focus) focusFeature(f);
   }
   function tooltip(event,f) {
-    const p=f.properties, level=tier(salary,data.areas[p.area]);
+    const p=f.properties, level=tier(salary,wageAreas[p.area]);
     const title=document.createElement('strong'); title.textContent=`${p.name}, ${p.state}`;
     const detail=document.createElement('span'); detail.textContent=level===null?'No comparison available':`${money(salary)} / yr · ${bands[level].label}`;
     $('tooltip').replaceChildren(title,detail); $('tooltip').hidden=false;
@@ -124,18 +127,71 @@
     if(match) selectCounty(match,true);
   }
   function exportCsv() {
+    if(occupationBusy || occupationError || !validSalary(salary)) return;
     const quote=value=>`"${String(value??'').replaceAll('"','""')}"`;
-    const rows=[['FIPS','County','State','Wage area','Annual salary','Band','Level I annual','Level II annual','Level III annual','Level IV annual','Wage year']];
+    const rows=[['FIPS','County','State','Wage area','Annual salary','Band','Level I annual','Level II annual','Level III annual','Level IV annual','Wage year','Selected code','Occupation','Wage SOC','Source unit','Source label']];
     for(const f of counties.filter(f=>!state||f.properties.state===state)) {
-      const a=data.areas[f.properties.area], lv=tier(salary,a), rates=thresholds(a);
-      rows.push([f.id,f.properties.name,f.properties.state,a?.name,salary,lv===null?'Unavailable':bands[lv].label,...(rates||['','','','']),data.meta.wageYear]);
+      const a=wageAreas[f.properties.area], lv=tier(salary,a), rates=thresholds(a);
+      rows.push([f.id,f.properties.name,f.properties.state,data.areas[f.properties.area]?.name,salary,lv===null?'Unavailable':bands[lv].label,...(rates||['','','','']),data.meta.wageYear,occupation.code,occupation.title,occupation.soc,a?.unit,a?.label]);
     }
     const url=URL.createObjectURL(new Blob([rows.map(row=>row.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download=`oflc-counties-${state||'US'}-${salary}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const a=document.createElement('a');a.href=url;a.download=`oflc-${occupation.code}-${state||'US'}-${salary}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function filterOccupations() {
+    const matches=findOccupations(options,$('occupation-search').value), fragment=document.createDocumentFragment();
+    if(occupation && !matches.some(o=>o.code===occupation.code)) fragment.append(new Option(`${occupation.code} · ${occupation.title}`,occupation.code));
+    for(const kind of ['SOC','O*NET']) {
+      const group=document.createElement('optgroup');group.label=kind==='SOC'?'SOC wage occupations':'O*NET occupations (mapped SOC wages)';
+      matches.filter(o=>o.kind===kind).forEach(o=>group.append(new Option(`${o.code} · ${o.title}`,o.code)));
+      if(group.children.length) fragment.append(group);
+    }
+    if(!matches.length) {const empty=new Option('No matching occupations','');empty.disabled=true;fragment.append(empty);}
+    $('occupation-select').replaceChildren(fragment);
+    if(occupation) $('occupation-select').value=occupation.code;
+  }
+  async function selectOccupation(code) {
+    const entry=options.find(o=>o.code===code);
+    if(!entry) return;
+    const serial=++loadSerial;
+    occupation=entry;occupationBusy=true;occupationError=false;wageAreas={};
+    $('occupation-select').value=entry.code;
+    $('occupation-status').textContent=`Loading ${entry.code} · ${entry.title}…`;
+    $('occupation-status').className='';$('occupation-retry').hidden=true;
+    $('map-title').textContent=entry.title;
+    $('occupation-name').textContent=entry.title;$('occupation-soc').textContent=entry.soc;
+    $('onet-row').hidden=entry.kind!=='O*NET';$('occupation-onet').textContent=entry.kind==='O*NET'?entry.code:'';
+    $('tooltip').hidden=true;update();
+    try {
+      let payload=wageCache.get(entry.soc);
+      if(!payload) {
+        const version=catalog.sourceHashes['ALC_Export.csv'];
+        const response=await fetch(`data/occupations/${entry.soc}.json?v=${version.slice(0,12)}`,{signal:AbortSignal.timeout(20000)});
+        if(!response.ok) throw new Error('Occupation data could not load');
+        payload=await response.json();
+        if(payload.code!==entry.soc || !payload.areas || typeof payload.areas!=='object' || !Object.keys(payload.areas).length) throw new Error('Invalid occupation data');
+        wageCache.set(entry.soc,payload);
+      }
+      if(serial!==loadSerial) return;
+      wageAreas=payload.areas;occupationBusy=false;
+      $('occupation-status').textContent='';update();
+    } catch(error) {
+      if(serial!==loadSerial) return;
+      occupationBusy=false;occupationError=true;
+      $('occupation-status').textContent=`Could not load ${entry.code}. Retry or choose another occupation.`;
+      $('occupation-status').className='error';$('occupation-retry').hidden=false;update();
+    }
   }
   async function init() {
-    const response=await fetch('data/counties.json'); if(!response.ok) throw new Error('Could not load county data');
-    data=await response.json(); counties=data.counties.features.sort((a,b)=>`${a.properties.state}${a.properties.name}`.localeCompare(`${b.properties.state}${b.properties.name}`));
+    const responses=await Promise.all([fetch('data/counties.json'),fetch('data/occupations.json')]);
+    if(responses.some(r=>!r.ok)) throw new Error('Could not load map data');
+    [data,catalog]=await Promise.all(responses.map(r=>r.json()));
+    options=occupationOptions(catalog);
+    const requested=options.find(o=>o.code===params.get('occupation'));
+    occupation=requested || options.find(o=>o.code==='15-1252');
+    if(!occupation) throw new Error('Default occupation missing');
+    $('occupation-count').textContent=`${catalog.occupations.length} SOC · ${options.length-catalog.occupations.length} O*NET`;
+    filterOccupations();
+    counties=data.counties.features.sort((a,b)=>`${a.properties.state}${a.properties.name}`.localeCompare(`${b.properties.state}${b.properties.name}`));
     if(!counties.length || !data.areas || !data.stateShapes) throw new Error('Incomplete map data');
     selected=counties.find(f=>f.id===params.get('county')) || counties.find(f=>f.id==='48453') || counties[0];
     $('vintage').textContent=data.meta.wageYear;
@@ -154,7 +210,10 @@
     layer.append('g').selectAll('path').data(data.stateShapes.features).join('path').attr('class','state-outline').attr('d',path);
     layer.append('g').selectAll('text').data(data.stateShapes.features.filter(f=>!['DC','RI','DE','MD','NJ','MA','CT'].includes(f.id))).join('text')
       .attr('class','state-label').attr('text-anchor','middle').attr('transform',f=>`translate(${path.centroid(f)})`).text(f=>f.id);
-    controls.forEach(el=>el.disabled=false);$('loading').hidden=true;
+    controls.forEach(el=>el.disabled=false);
+    $('occupation-search').addEventListener('input',filterOccupations);
+    $('occupation-select').addEventListener('change',()=>selectOccupation($('occupation-select').value));
+    $('occupation-retry').addEventListener('click',()=>selectOccupation(occupation.code));
     $('salary').addEventListener('input',()=>{salary=$('salary').value===''?NaN:Number($('salary').value)*(unit==='year'?1:2080);update();});
     $('salary-range').addEventListener('input',()=>{salary=Number($('salary-range').value);syncPay();});
     $('year').addEventListener('click',()=>changeUnit('year'));$('hour').addEventListener('click',()=>changeUnit('hour'));
@@ -168,6 +227,8 @@
     $('reset').addEventListener('click',()=>{state='';$('state').value='';$('county-search').value='';svg.call(zoom.transform,d3.zoomIdentity);searchOptions();update();});
     $('download').addEventListener('click',exportCsv);
     syncPay();searchOptions();
+    await selectOccupation(occupation.code);
+    $('loading').hidden=true;
     if(params.get('state') && data.states[params.get('state')]) {$('state').value=params.get('state');$('state').dispatchEvent(new Event('change'));}
   }
   init().catch(error=>{

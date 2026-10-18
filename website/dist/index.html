@@ -2,15 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Compare a software developer salary against four OFLC wage benchmarks in every U.S. county.">
+  <meta name="description" content="Compare salaries for all supported OFLC occupations against four wage benchmarks in every U.S. county.">
   <title>OFLC Wage Atlas</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="occupations.css">
   <script defer src="vendor/d3.min.js"></script><script defer src="vendor/lucide.min.js"></script>
   <script defer src="wage-core.js"></script><script defer src="map-core.js"></script><script defer src="app.js"></script>
 </head>
 <body>
-  <header class="masthead"><div class="brand"><i data-lucide="map" aria-hidden="true"></i><h1>Wage Atlas</h1><span class="brand-rule"></span><span class="subtitle">OFLC / Software Developers</span></div><span id="vintage" class="vintage">2026–27</span></header>
+  <header class="masthead"><div class="brand"><i data-lucide="map" aria-hidden="true"></i><h1>Wage Atlas</h1><span class="brand-rule"></span><span class="subtitle">OFLC / County wage benchmarks</span></div><span id="vintage" class="vintage">2026–27</span></header>
   <div id="notice" role="status" hidden></div>
+  <section class="occupation-bar" aria-label="Occupation selection">
+    <div><label for="occupation-search">Search occupations</label><input id="occupation-search" type="search" placeholder="Title, SOC or O*NET code" autocomplete="off"></div>
+    <div><label for="occupation-select">Occupation <span id="occupation-count"></span></label><select id="occupation-select"><option value="15-1252">15-1252 · Software Developers</option></select></div>
+    <div id="occupation-status" role="status" aria-live="polite"></div><button id="occupation-retry" hidden>Retry</button>
+  </section>
   <section class="toolbar" aria-label="Map filters">
     <div class="salary-control"><label for="salary">Base salary</label><div class="salary-row"><span>$</span><input id="salary" type="number" value="120000" min="0.01" max="10000000" step="1000" inputmode="decimal" aria-describedby="salary-error"><div class="segmented" aria-label="Pay period"><button id="year" aria-pressed="true">/ year</button><button id="hour" aria-pressed="false">/ hour</button></div></div><span id="salary-error" role="alert" hidden>Enter a positive salary up to $10 million/year.</span></div>
     <div class="slider-control"><label for="salary-range" id="equivalent">$57.69 / hour</label><input id="salary-range" type="range" min="40000" max="350000" value="120000" step="500" aria-label="Annual base salary"><div class="slider-labels"><span>$40k</span><span id="slider-max">$350k</span></div></div>
@@ -31,7 +37,7 @@
       <div class="threshold-heading"><h3>Wage thresholds</h3><span id="threshold-unit">Annual</span></div><div id="thresholds"></div>
       <p id="next-level" class="next-level"></p>
       <div class="area-note"><i data-lucide="map-pin" aria-hidden="true"></i><p>County geography, wage-area rates. Counties in the same OFLC area share the same thresholds.</p></div>
-      <dl class="metadata"><div><dt>Occupation</dt><dd>Software Developers</dd></div><div><dt>O*NET</dt><dd>15-1252.00</dd></div><div><dt>Industry</dt><dd>All industries</dd></div><div><dt>Annual hours</dt><dd>2,080</dd></div></dl>
+      <dl class="metadata"><div><dt>Occupation</dt><dd id="occupation-name">Software Developers</dd></div><div><dt>Wage SOC</dt><dd id="occupation-soc">15-1252</dd></div><div id="onet-row" hidden><dt>O*NET</dt><dd id="occupation-onet"></dd></div><div><dt>Source rate</dt><dd id="source-unit">Hourly</dd></div><div><dt>Industry</dt><dd>All industries</dd></div><div><dt>Annual hours</dt><dd>2,080</dd></div></dl>
     </aside>
   </main>
   <footer><div><strong>OFLC 2026–27</strong><span id="validity">July 1, 2026 – June 30, 2027</span><span>Snapshot: October 2026</span></div><div><a href="https://flag.dol.gov/wage-data/wage-data-downloads" target="_blank" rel="noopener noreferrer">DOL wage data ↗</a><a href="methodology.html">Data & methodology</a></div><p>Salary comparison only, not an official prevailing wage determination or visa eligibility assessment. Base pay excludes bonus & equity.</p></footer>
