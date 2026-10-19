@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  verify-map:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,9 +35,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Wage thresholds and county joins
-        run: node --test website/tests/map.test.cjs
-      - run: npx playwright install --with-deps firefox
-      - name: Desktop and mobile Firefox checks
+        run: node --test website/tests/*.test.cjs
+      - name: Occupation builder fixtures
+        run: python3 -m unittest discover -s website/tests -p 'test_*.py' -v
+      - run: npx playwright install --with-deps firefox chromium
+      - name: Desktop and mobile browser checks
         env:
           PLAYWRIGHT_MODULE: ${{ github.workspace }}/node_modules/playwright
         run: |
@@ -49,6 +51,8 @@ jobs:
             sleep 1
           done
           node website/tests/browser.cjs
+          node website/tests/occupations-browser.cjs
+          node website/tests/streets-browser.cjs
       - name: Browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,7 +68,7 @@ jobs:
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: verify
+    needs: verify-map
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

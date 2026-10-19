@@ -3,9 +3,14 @@
 **[Live website](https://juewang268.github.io/oflc-wage-lens/)**
 
 Open-source companion website to OFLC Wage Lens. Enter a base salary and compare
-it against four software developer wage thresholds across all 50 states and DC.
-No accounts, API keys, tiles, analytics, or external runtime requests are needed
-by the application. Hosting may separately require sign-in.
+it against four wage thresholds across all 50 states and DC. Select from all
+**848 SOC occupations & 997 O*NET entries** in the downloaded all-industries
+dataset. Software Developers (15-1252) is the default. Search by title or code;
+O*NET entries use their explicitly mapped SOC's wages, not inferred rates.
+The default county view uses bundled assets only. Select **Streets & places**
+for city/town labels and roads above the wage shading. This optional view loads
+OpenFreeMap tiles over the internet and requires WebGL. No accounts, API keys
+or analytics are used. County comparisons remain available if tiles fail.
 
 ## Run
 
@@ -40,15 +45,25 @@ All browser assets use relative URLs so deployment under `/oflc-wage-lens/` work
 | Gray | Missing, flagged, ambiguous or invalid comparison |
 
 There is **no Level V**. Equal thresholds belong to the higher band. Comparisons
-reuse `WageLensCore.classify` from the browser extension and compare cents.
-Hourly equivalents use 2,080 hours/year. This is a salary benchmark, not an
+preserve the extension's cent-based boundary rules. Hourly source rates are
+annualized using 2,080 hours/year; records labeled `Annual Wage` are already
+annual and are never multiplied again. Hourly display for these records is an
+equivalent, not a published hourly estimate. This is a salary benchmark, not an
 official prevailing wage determination or visa eligibility assessment.
 
 ## Sources and coverage
 
 - Wage snapshot: **October 2026**, OFLC 2026-27, valid July 1, 2026-June 30, 2027.
 - [DOL source](https://flag.dol.gov/wage-data/wage-data-downloads).
-- Occupation: Software Developers, SOC 15-1252 / O*NET 15-1252.00, all industries.
+- Occupations: all 848 SOC codes and 997 O*NET crosswalk entries, all industries.
+  Default: Software Developers, SOC 15-1252.
+- Sources: `ALC_Export.csv`, `oes_soc_occs.csv` and `xwalk_plus.csv`.
+  `EDC_Export.csv` (higher education) is intentionally not mixed into this map.
+- `dist/data/occupations.json` is the title/crosswalk catalog and source hash
+  manifest. Each `dist/data/occupations/<SOC>.json` contains 530 wage-area rows
+  and loads only when needed. Selecting a specialization reuses its SOC file.
+- `High Wage` and `No Leveled Wage` rows have no four-level breakdown. They stay
+  gray with a source-specific explanation; no levels are invented from averages.
 - Boundaries: 2025 Census cartographic counties and states, 1:5,000,000 scale.
   [Counties](https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_county_5m.zip),
   [states](https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_state_5m.zip).
@@ -71,8 +86,12 @@ unchanged. To update:
 4. Install the build-only dependency: `python3 -m pip install pyshp==2.3.1`.
 5. Run `python3 scripts/build-map.py`. For other paths, use `--wages`,
    `--boundaries`, `--output`, `--boundary-year` and `--snapshot`.
-6. Inspect the printed unmatched list. Do not add fuzzy matches just to fill gaps.
-7. Run tests, review screenshots, then publish the rebuilt `dist/`.
+6. Build all occupation files from the same release's unmodified CSVs:
+   `python3 scripts/build-occupations.py /path/to/OFLC_Wages_2026-27`.
+   This uses the Python standard library, preserves source units and labels,
+   and records CSV hashes. Inspect the catalog counts before publishing.
+7. Inspect the printed unmatched list. Do not add fuzzy matches just to fill gaps.
+8. Run tests, review screenshots, then publish the rebuilt `dist/`.
 
 The matching state boundary ZIP must be next to the county ZIP, named by
 replacing `_county_` with `_state_`. Suppressed, missing or nonmonotonic wage
@@ -81,29 +100,49 @@ levels remain gray, even when geographic matching succeeds.
 ## Tests
 
 ```sh
-node --test tests/map.test.cjs
+node --test tests/*.test.cjs
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 npm install
 # Start the local server in another terminal, then:
 npm run test:browser
 ```
 
-Browser tests use headless Firefox; install it once with `npx playwright install firefox`.
+Browser tests use Firefox & Chromium; install with `npx playwright install firefox chromium`.
 `PLAYWRIGHT_MODULE` can point at an existing Playwright installation.
 `BASE_URL` overrides the preview address. Tests cover precise boundaries, bad
 inputs, joins, units, map interaction, state filters, CSV exports, bookmark
-restoration, expired data, load failure, and mobile layout. Screenshots go to
+restoration, expired data, load failure, and mobile layout. Occupation tests also
+check all 449,440 source rows, annual/hourly rate handling, exact boundaries,
+O*NET mapping, preserved worksite/salary selections, response races and retries.
+Screenshots go to
 ignored `test-results/`. No test submits user data anywhere.
 
 ## Repository layout
 
 - `dist/`: self-contained deployable static site, including pinned vendor files.
 - `scripts/build-map.py`: reproducible explicit county/state join.
+- `scripts/build-occupations.py`: reproducible catalog and per-SOC wage builder.
 - `source-data/`: unmodified public wage JSON and Census ZIPs only.
 - `tests/`: calculation and browser regression coverage.
 
-Application code: MIT. D3 7.9.0 and Lucide 1.8.0: ISC; license texts are in
-`dist/vendor/`. PyShp 2.3.1 is MIT licensed and used only to build data.
+Application code: MIT. D3 7.9.0 and Lucide 1.8.0: ISC. MapLibre GL JS 6.15.0:
+BSD-3-Clause. Pinned rendering files and license texts are in `dist/vendor/`.
+PyShp 2.3.1 is MIT licensed and used only to build data.
+The optional street view uses [OpenFreeMap](https://openfreemap.org/),
+[OpenMapTiles](https://openmaptiles.org/) and
+[OpenStreetMap](https://www.openstreetmap.org/copyright) data (ODbL).
+Attribution remains visible on the map. Labels appear at the basemap's suitable
+zoom levels; not every settlement is labeled at once. County boundaries remain
+simplified Census geometry, not street/parcel-accurate worksite boundaries.
+Street tile requests reveal IP address and the viewed geographic area to the
+provider, but do not include salary or occupation. Cross-origin referrers are
+restricted to the site origin. The provider has no uptime guarantee.
 No resume, email, credentials, or other private application documents belong
 in this folder or any deployment archive. Salary and county are saved in the
-page URL for bookmarking, which can be visible in browser history, copied URLs
-and host access logs.
+page URL for bookmarking, along with the selected occupation code; these can
+be visible in browser history, copied URLs and host access logs.
+
+Street-view checks use Chromium (`npx playwright install chromium`), then
+`node tests/streets-browser.cjs` against the running preview. CI uses a local
+basemap fixture, not the public tile service. `LIVE_TILES=1` opts into a live
+smoke test for roads, labels, attribution and canvas rendering.
