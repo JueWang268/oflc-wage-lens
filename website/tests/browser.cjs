@@ -12,6 +12,13 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
   page.on('request',r=>{if(!r.url().startsWith(base))external.push(r.url());});
   await page.goto(base);
   await page.locator('#loading').waitFor({state:'hidden'});
+  assert.equal(await page.locator('.masthead').count(),0,'No decorative header above the filters');
+  const layout=await page.evaluate(()=>({
+    top:document.querySelector('main').getBoundingClientRect().top,
+    rows:['occupation-search','occupation-select','salary','state','county-search'].map(id=>document.getElementById(id).getBoundingClientRect().top)
+  }));
+  assert.ok(layout.top<110,`Desktop filters should fit in a compact strip, got ${layout.top}px`);
+  assert.ok(Math.max(...layout.rows)-Math.min(...layout.rows)<5,'Desktop inputs share one row');
   assert.equal(await page.locator('.county').count(),3144);
   assert.equal(await page.locator('.threshold').count(),4);
   assert.equal(await page.locator('.legend-item').count(),5);
@@ -37,7 +44,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#download').click()]);
   const csv=fs.readFileSync(await download.path(),'utf8');assert.equal(csv.split('\r\n').length,3145);assert.ok(csv.includes('"06085"'));
   await page.reload();await page.locator('#loading').waitFor({state:'hidden'});assert.match(await page.locator('#county-name').innerText(),/Santa Clara/);
-  for(const width of [390,320]) {
+  for(const width of [1024,768,390,320]) {
     await page.setViewportSize({width,height:844});
     await page.screenshot({path:path.join(__dirname,`../test-results/mobile-${width}.png`),fullPage:true});
     const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).map(el=>[el.tagName,el.id,el.className,el.getBoundingClientRect().right]).filter(row=>row[0]!=='path'));
