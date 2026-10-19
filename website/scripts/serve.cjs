@@ -2,7 +2,7 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../dist');
-const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.txt':'text/plain'};
+const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.txt':'text/plain'};
 const server=http.createServer((req,res)=>{
   let name;try{name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400);res.end();return;}
   const file=path.resolve(root,'.'+(name==='/'?'/index.html':name));

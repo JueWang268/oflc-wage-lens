@@ -35,11 +35,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Wage thresholds and county joins
-        run: node --test website/tests/map.test.cjs
+        run: node --test website/tests/*.test.cjs
       - name: Occupation builder fixtures
         run: python3 -m unittest discover -s website/tests -p 'test_*.py' -v
-      - run: npx playwright install --with-deps firefox
-      - name: Desktop and mobile Firefox checks
+      - run: npx playwright install --with-deps firefox chromium
+      - name: Desktop and mobile browser checks
         env:
           PLAYWRIGHT_MODULE: ${{ github.workspace }}/node_modules/playwright
         run: |
@@ -52,6 +52,7 @@ jobs:
           done
           node website/tests/browser.cjs
           node website/tests/occupations-browser.cjs
+          node website/tests/streets-browser.cjs
       - name: Browser screenshots
         if: always()
         uses: actions/upload-artifact@v4

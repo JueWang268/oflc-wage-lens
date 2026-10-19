@@ -6,6 +6,8 @@
   <title>OFLC Wage Atlas</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="occupations.css">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <script defer src="vendor/d3.min.js"></script><script defer src="vendor/lucide.min.js"></script>
   <script defer src="wage-core.js"></script><script defer src="map-core.js"></script><script defer src="app.js"></script>
 </head>
@@ -26,8 +28,9 @@
   <main>
     <section class="map-section" aria-labelledby="map-title">
       <div class="map-heading"><div><p class="eyebrow">COUNTY-LEVEL COMPARISON</p><h2 id="map-title">Software developer wages</h2></div><div class="map-controls"><button id="zoom-in" title="Zoom in" aria-label="Zoom in"><i data-lucide="plus"></i></button><button id="zoom-out" title="Zoom out" aria-label="Zoom out"><i data-lucide="minus"></i></button><button id="reset" title="Reset map" aria-label="Reset map"><i data-lucide="maximize"></i></button></div></div>
+      <div class="map-modes segmented" aria-label="Map view"><button id="county-view" aria-pressed="true" disabled>Counties</button><button id="street-view" aria-pressed="false" disabled>Streets &amp; places</button></div>
       <section class="legend" aria-label="Wage comparison legend" id="legend"></section>
-      <div class="map-wrap"><p id="loading" role="status">Loading county wages…</p><svg id="map" viewBox="0 0 1000 640" role="img" aria-label="County wage comparison map. County search provides the same details by keyboard."></svg><div id="tooltip" hidden></div></div>
+      <div class="map-wrap"><p id="loading" role="status">Loading county wages…</p><svg id="map" viewBox="0 0 1000 640" role="img" aria-label="County wage comparison map. County search provides the same details by keyboard."></svg><div id="streets" aria-label="Street map with county wage colors" hidden></div><div id="street-status" role="status" hidden></div><div id="tooltip" hidden></div></div>
       <div class="map-caption"><span id="coverage"></span><button id="download" class="text-button"><i data-lucide="download"></i>County CSV</button></div>
       <div class="legend-note"><span><b class="missing-dot"></b>Unavailable / unmatched</span><span>Equal to a threshold enters the higher band.</span></div>
     </section>

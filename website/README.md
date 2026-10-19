@@ -7,8 +7,10 @@ it against four wage thresholds across all 50 states and DC. Select from all
 **848 SOC occupations & 997 O*NET entries** in the downloaded all-industries
 dataset. Software Developers (15-1252) is the default. Search by title or code;
 O*NET entries use their explicitly mapped SOC's wages, not inferred rates.
-No accounts, API keys, tiles, analytics, or external runtime requests are needed
-by the application. Hosting may separately require sign-in.
+The default county view uses bundled assets only. Select **Streets & places**
+for city/town labels and roads above the wage shading. This optional view loads
+OpenFreeMap tiles over the internet and requires WebGL. No accounts, API keys
+or analytics are used. County comparisons remain available if tiles fail.
 
 ## Run
 
@@ -98,14 +100,14 @@ levels remain gray, even when geographic matching succeeds.
 ## Tests
 
 ```sh
-node --test tests/map.test.cjs
+node --test tests/*.test.cjs
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 npm install
 # Start the local server in another terminal, then:
 npm run test:browser
 ```
 
-Browser tests use headless Firefox; install it once with `npx playwright install firefox`.
+Browser tests use Firefox & Chromium; install with `npx playwright install firefox chromium`.
 `PLAYWRIGHT_MODULE` can point at an existing Playwright installation.
 `BASE_URL` overrides the preview address. Tests cover precise boundaries, bad
 inputs, joins, units, map interaction, state filters, CSV exports, bookmark
@@ -123,9 +125,24 @@ ignored `test-results/`. No test submits user data anywhere.
 - `source-data/`: unmodified public wage JSON and Census ZIPs only.
 - `tests/`: calculation and browser regression coverage.
 
-Application code: MIT. D3 7.9.0 and Lucide 1.8.0: ISC; license texts are in
-`dist/vendor/`. PyShp 2.3.1 is MIT licensed and used only to build data.
+Application code: MIT. D3 7.9.0 and Lucide 1.8.0: ISC. MapLibre GL JS 6.15.0:
+BSD-3-Clause. Pinned rendering files and license texts are in `dist/vendor/`.
+PyShp 2.3.1 is MIT licensed and used only to build data.
+The optional street view uses [OpenFreeMap](https://openfreemap.org/),
+[OpenMapTiles](https://openmaptiles.org/) and
+[OpenStreetMap](https://www.openstreetmap.org/copyright) data (ODbL).
+Attribution remains visible on the map. Labels appear at the basemap's suitable
+zoom levels; not every settlement is labeled at once. County boundaries remain
+simplified Census geometry, not street/parcel-accurate worksite boundaries.
+Street tile requests reveal IP address and the viewed geographic area to the
+provider, but do not include salary or occupation. Cross-origin referrers are
+restricted to the site origin. The provider has no uptime guarantee.
 No resume, email, credentials, or other private application documents belong
 in this folder or any deployment archive. Salary and county are saved in the
 page URL for bookmarking, along with the selected occupation code; these can
 be visible in browser history, copied URLs and host access logs.
+
+Street-view checks use Chromium (`npx playwright install chromium`), then
+`node tests/streets-browser.cjs` against the running preview. CI uses a local
+basemap fixture, not the public tile service. `LIVE_TILES=1` opts into a live
+smoke test for roads, labels, attribution and canvas rendering.

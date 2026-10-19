@@ -10,9 +10,45 @@
   let unit = 'year', state = '', selected, data, counties, paths, projection, path, layer, zoom, svg;
   let catalog, options, occupation, wageAreas={}, occupationBusy=false, occupationError=false, loadSerial=0;
   const wageCache=new Map();
-  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.occupation-bar input,.occupation-bar select,.map-controls button,#download')];
+  let streetMap,streetPromise,mapMode='county';
+  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.occupation-bar input,.occupation-bar select,.map-controls button,.map-modes button,#download')];
   controls.forEach(el => el.disabled = true);
   lucide.createIcons();
+
+  function updateStreetMap() {
+    if(!streetMap) return;
+    const colors=Object.fromEntries(Object.entries(wageAreas).map(([id,area])=>{
+      const level=tier(salary,area);return [id,level===null?'#cbd0ce':bands[level].color];
+    }));
+    streetMap.update({colors,state,selected});
+  }
+  function streetStatus(message,retry=false) {
+    const el=$('street-status');el.replaceChildren();el.hidden=!message || mapMode!=='street';
+    if(!message) return;
+    el.append(document.createTextNode(message));
+    if(retry) {
+      const button=document.createElement('button');button.textContent='Retry';
+      button.addEventListener('click',()=>{streetMap?.destroy();streetMap=null;streetPromise=null;delete $('streets').dataset.ready;setMapMode('street');});el.append(button);
+    }
+  }
+  async function setMapMode(mode) {
+    mapMode=mode;$('map').hidden=mode!=='county';$('streets').hidden=mode!=='street';$('tooltip').hidden=true;
+    $('county-view').setAttribute('aria-pressed',String(mode==='county'));
+    $('street-view').setAttribute('aria-pressed',String(mode==='street'));
+    if(mode==='county') {$('street-status').hidden=true;return;}
+    if(streetMap) {streetMap.resize();streetMap.focus(selected);$('street-status').hidden=!$('street-status').textContent;return;}
+    streetStatus('Loading streets & places...');
+    if(!streetPromise) streetPromise=import('./streets.mjs').then(({createStreetMap})=>createStreetMap({
+      container:$('streets'),counties:data.counties,selected,
+      onSelect:id=>{const county=counties.find(f=>f.id===id);if(county) selectCounty(county);},onStatus:streetStatus
+    }));
+    try {
+      streetMap=await streetPromise;updateStreetMap();
+      if(mapMode==='street') {streetMap.resize();streetMap.focus(selected);}
+    } catch(error) {
+      streetPromise=null;streetStatus('Street map unavailable. Enable WebGL & check your connection, or use Counties.',true);
+    }
+  }
 
   function updateUrl() {
     if (!validSalary(salary) || !occupation || occupationBusy || occupationError) return;
@@ -94,8 +130,10 @@
     else $('next-level').textContent=`${money((rates[level]-salary)/(unit==='year'?1:2080),unit==='hour')} ${unit==='year'?'per year':'per hour'} to reach Level ${['I','II','III','IV'][level]}.`;
     paths.classed('selected',f=>f.id===selected.id).filter(f=>f.id===selected.id).raise();
     $('source-unit').textContent=area?.unit==='year'?'Annual (hourly equivalent)':area?.unit==='hour'?'Hourly':'Unavailable';
+    updateStreetMap();
   }
   function focusFeature(feature) {
+    if(mapMode==='street') streetMap?.focus(feature);
     const [[x0,y0],[x1,y1]]=path.bounds(feature);
     if (![x0,y0,x1,y1].every(Number.isFinite)) return;
     const scale=Math.min(14,0.85/Math.max((x1-x0)/1000,(y1-y0)/640));
@@ -221,10 +259,12 @@
     $('state').addEventListener('change',()=>{
       state=$('state').value;$('county-search').value='';searchOptions();
       if(state) {if(selected.properties.state!==state) selected=counties.find(f=>f.properties.state===state);focusFeature(data.stateShapes.features.find(f=>f.id===state));}
-      else svg.call(zoom.transform,d3.zoomIdentity);update();
+      else {svg.call(zoom.transform,d3.zoomIdentity);if(mapMode==='street') streetMap?.reset();}update();
     });
-    $('zoom-in').addEventListener('click',()=>svg.call(zoom.scaleBy,1.6));$('zoom-out').addEventListener('click',()=>svg.call(zoom.scaleBy,1/1.6));
-    $('reset').addEventListener('click',()=>{state='';$('state').value='';$('county-search').value='';svg.call(zoom.transform,d3.zoomIdentity);searchOptions();update();});
+    $('county-view').addEventListener('click',()=>setMapMode('county'));
+    $('street-view').addEventListener('click',()=>setMapMode('street'));
+    $('zoom-in').addEventListener('click',()=>mapMode==='street'?streetMap?.zoom(1.6):svg.call(zoom.scaleBy,1.6));$('zoom-out').addEventListener('click',()=>mapMode==='street'?streetMap?.zoom(1/1.6):svg.call(zoom.scaleBy,1/1.6));
+    $('reset').addEventListener('click',()=>{state='';$('state').value='';$('county-search').value='';svg.call(zoom.transform,d3.zoomIdentity);if(mapMode==='street') streetMap?.reset();searchOptions();update();});
     $('download').addEventListener('click',exportCsv);
     syncPay();searchOptions();
     await selectOccupation(occupation.code);

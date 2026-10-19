@@ -15,6 +15,10 @@ focused on Software Developers. Five bands
 run from deep red (below Level I) through red, yellow and light green to green
 (Level IV or above). There is no Level V. Selecting a county shows all four
 thresholds, with annual/hourly controls, state filtering, county search and CSV export.
+Switch to **Streets & places** for city/town names and roads above the county
+colors. This optional view uses OpenFreeMap tiles and needs internet access &
+WebGL. The default county overview uses only bundled assets. See the website
+README for map attribution, third-party request details and test coverage.
 
 Run `node website/scripts/serve.cjs`, then open http://127.0.0.1:4178.
 The website uses the October 2026 OFLC snapshot and 2025 Census boundaries;
