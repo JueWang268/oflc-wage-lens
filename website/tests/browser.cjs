@@ -15,10 +15,12 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
   assert.equal(await page.locator('.masthead').count(),0,'No decorative header above the filters');
   const layout=await page.evaluate(()=>({
     top:document.querySelector('main').getBoundingClientRect().top,
-    rows:['occupation-search','occupation-select','salary','state','county-search'].map(id=>document.getElementById(id).getBoundingClientRect().top)
+    rows:['occupation-search','occupation-select','salary'].map(id=>document.getElementById(id).getBoundingClientRect().top),
+    mapRows:['state','county-search','county-view'].map(id=>document.getElementById(id).getBoundingClientRect().bottom)
   }));
   assert.ok(layout.top<110,`Desktop filters should fit in a compact strip, got ${layout.top}px`);
   assert.ok(Math.max(...layout.rows)-Math.min(...layout.rows)<5,'Desktop inputs share one row');
+  assert.ok(Math.max(...layout.mapRows)-Math.min(...layout.mapRows)<5,'State and county share the map-mode row');
   assert.equal(await page.locator('.county').count(),3144);
   assert.equal(await page.locator('.threshold').count(),4);
   assert.equal(await page.locator('.legend-item').count(),5);

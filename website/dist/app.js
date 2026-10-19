@@ -12,7 +12,7 @@
   let suggestions=[],activeSuggestion=-1;
   const wageCache=new Map();
   let streetMap,streetPromise,mapMode='county';
-  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.map-controls button,.map-modes button,#download')];
+  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.map-heading input,.map-heading select,.map-controls button,.map-modes button,#download')];
   controls.forEach(el => el.disabled = true);
   lucide.createIcons();
 
