@@ -9,9 +9,10 @@
   let salary = params.has('salary') && validSalary(Number(params.get('salary'))) ? Number(params.get('salary')) : 120000;
   let unit = 'year', state = '', selected, data, counties, paths, projection, path, layer, zoom, svg;
   let catalog, options, occupation, wageAreas={}, occupationBusy=false, occupationError=false, loadSerial=0;
+  let suggestions=[],activeSuggestion=-1;
   const wageCache=new Map();
   let streetMap,streetPromise,mapMode='county';
-  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.map-controls button,.map-modes button,#download')];
+  const controls = [...document.querySelectorAll('.toolbar input,.toolbar button,.toolbar select,.map-heading input,.map-heading select,.map-controls button,.map-modes button,#download')];
   controls.forEach(el => el.disabled = true);
   lucide.createIcons();
 
@@ -187,6 +188,44 @@
     $('occupation-select').replaceChildren(fragment);
     if(occupation) $('occupation-select').value=occupation.code;
   }
+  function closeSuggestions() {
+    $('occupation-suggestions').hidden=true;
+    $('occupation-search').setAttribute('aria-expanded','false');
+    $('occupation-search').removeAttribute('aria-activedescendant');
+    activeSuggestion=-1;
+  }
+  function showSuggestions() {
+    const matches=findOccupations(options,$('occupation-search').value);
+    suggestions=matches.slice(0,30);activeSuggestion=-1;
+    $('occupation-search').removeAttribute('aria-activedescendant');
+    $('occupation-options').replaceChildren(...suggestions.map((entry,index)=>{
+      const item=document.createElement('li');item.id=`occupation-option-${index}`;
+      item.role='option';item.dataset.index=String(index);item.setAttribute('aria-selected','false');
+      const title=document.createElement('strong');title.textContent=entry.title;
+      const code=document.createElement('small');code.textContent=`${entry.code} · ${entry.kind}`;
+      item.append(title,code);return item;
+    }));
+    $('occupation-options').scrollTop=0;
+    $('occupation-matches').textContent=matches.length?`${suggestions.length===matches.length?matches.length:`${suggestions.length} of ${matches.length}`} matches`:'No matching occupations';
+    $('occupation-suggestions').hidden=false;
+    $('occupation-search').setAttribute('aria-expanded','true');
+  }
+  function activateSuggestion(index) {
+    activeSuggestion=index;
+    [...$('occupation-options').children].forEach((item,i)=>item.setAttribute('aria-selected',String(i===index)));
+    const item=$('occupation-options').children[index];
+    if(item) {
+      $('occupation-search').setAttribute('aria-activedescendant',item.id);
+      // Scroll the menu itself, without jumping the page or the map beneath it.
+      const list=$('occupation-options');
+      if(item.offsetTop<list.scrollTop) list.scrollTop=item.offsetTop;
+      else if(item.offsetTop+item.offsetHeight>list.scrollTop+list.clientHeight) list.scrollTop=item.offsetTop+item.offsetHeight-list.clientHeight;
+    }
+  }
+  function chooseSuggestion(index) {
+    const entry=suggestions[index];if(!entry) return;
+    $('occupation-search').value=entry.title;filterOccupations();closeSuggestions();selectOccupation(entry.code);
+  }
   async function selectOccupation(code) {
     const entry=options.find(o=>o.code===code);
     if(!entry) return;
@@ -249,8 +288,27 @@
     layer.append('g').selectAll('text').data(data.stateShapes.features.filter(f=>!['DC','RI','DE','MD','NJ','MA','CT'].includes(f.id))).join('text')
       .attr('class','state-label').attr('text-anchor','middle').attr('transform',f=>`translate(${path.centroid(f)})`).text(f=>f.id);
     controls.forEach(el=>el.disabled=false);
-    $('occupation-search').addEventListener('input',filterOccupations);
-    $('occupation-select').addEventListener('change',()=>selectOccupation($('occupation-select').value));
+    $('occupation-search').addEventListener('input',()=>{filterOccupations();showSuggestions();});
+    $('occupation-search').addEventListener('focus',showSuggestions);
+    $('occupation-search').addEventListener('click',()=>{if($('occupation-suggestions').hidden) showSuggestions();});
+    $('occupation-search').addEventListener('blur',closeSuggestions);
+    $('occupation-search').addEventListener('keydown',event=>{
+      if(event.isComposing) return;
+      if(event.key==='ArrowDown'||event.key==='ArrowUp') {
+        event.preventDefault();if($('occupation-suggestions').hidden) showSuggestions();
+        if(suggestions.length) {
+          const step=event.key==='ArrowDown'?1:-1;
+          activateSuggestion(activeSuggestion<0?(step>0?0:suggestions.length-1):(activeSuggestion+step+suggestions.length)%suggestions.length);
+        }
+      } else if(event.key==='Enter' && !$('occupation-suggestions').hidden && activeSuggestion>=0) {
+        event.preventDefault();chooseSuggestion(activeSuggestion);
+      } else if(event.key==='Escape' && !$('occupation-suggestions').hidden) {event.preventDefault();closeSuggestions();}
+      else if(event.key==='Tab') closeSuggestions();
+    });
+    $('occupation-options').addEventListener('mousedown',event=>{if(event.target.closest('[data-index]')) event.preventDefault();});
+    $('occupation-options').addEventListener('click',event=>{const item=event.target.closest('[data-index]');if(item) chooseSuggestion(Number(item.dataset.index));});
+    document.addEventListener('pointerdown',event=>{if(!event.target.closest('.occupation-search-control')) closeSuggestions();});
+    $('occupation-select').addEventListener('change',()=>{closeSuggestions();selectOccupation($('occupation-select').value);});
     $('occupation-retry').addEventListener('click',()=>selectOccupation(occupation.code));
     $('salary').addEventListener('input',()=>{salary=$('salary').value===''?NaN:Number($('salary').value)*(unit==='year'?1:2080);update();});
     $('salary-range').addEventListener('input',()=>{salary=Number($('salary-range').value);syncPay();});

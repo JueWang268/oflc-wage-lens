@@ -58,6 +58,44 @@ const output=path.join(__dirname,'../test-results');
     assert.equal(await page.locator('#salary').inputValue(),'300000');
     assert.equal(await page.locator('#occupation-select').inputValue(),'15-1252.00');
     await page.locator('#street-view').click();
+    {
+      // Pick a different county before every real canvas click. Clicking the
+      // already-selected county would miss the leading-zero ID regression.
+      const geo=require('../dist/data/counties.json');
+      const targets=live?['CT','CA','AZ'].map(state=>geo.counties.features.find(f=>f.properties.state===state)):geo.counties.features.filter(f=>['CT','CA','AZ'].includes(f.properties.state));
+      const wages=require('../dist/data/occupations/15-1252.json');
+      const {thresholds}=require('../dist/map-core.js');
+      for(const state of (live?[]:Object.keys(geo.states).filter(s=>!['CT','CA','AZ'].includes(s)))) {
+        targets.push(geo.counties.features.find(f=>f.properties.state===state &&
+          (state==='AK'?f.properties.name==='Anchorage Municipality':state==='HI'?f.properties.name==='Hawaii County':true)));
+      }
+      for(const [index,target] of targets.entries()) {
+        assert.ok(target,'County test target exists');
+        await page.locator('#county-search').fill(`${target.properties.name}, ${target.properties.state}`);
+        await page.locator('#county-search').press('Enter');
+        await page.locator('#streets[data-ready="true"]').waitFor({timeout:30000});
+        const other=target.id==='48453'?'06085':'48453';
+        await page.locator(`.county[data-fips="${other}"]`).dispatchEvent('click');
+        const canvas=page.locator('.maplibregl-canvas');
+        await canvas.scrollIntoViewIfNeeded();const rect=await canvas.boundingBox();
+        let picked=false;
+        for(const y of [0.5,0.35,0.65,0.2,0.8]) {
+          for(const x of [0.5,0.35,0.65,0.2,0.8]) {
+            await page.mouse.click(rect.x+rect.width*x,rect.y+rect.height*y);
+            if((await page.locator('#selected-state').innerText()).endsWith(target.id)) {picked=true;break;}
+          }
+          if(picked) break;
+        }
+        assert.ok(picked,`Street click must select ${target.id} ${target.properties.name}, ${target.properties.state}`);
+        assert.equal(await page.locator('#county-name').innerText(),target.properties.name);
+        assert.equal(new URL(page.url()).searchParams.get('county'),target.id);
+        assert.equal(await page.locator('#county-search').inputValue(),`${target.properties.name}, ${target.properties.state}`);
+        const displayed=await page.locator('.threshold-values strong').allTextContents();
+        assert.deepEqual(displayed.map(text=>Number(text.replace(/[^0-9.]/g,''))),thresholds(wages.areas[target.properties.area]));
+        if((index+1)%25===0) console.log(`County clicks verified: ${index+1}/${targets.length}`);
+      }
+      console.log(live?'Live county clicks & wages passed in CT, CA & AZ.':`County picking: all 82 CT/CA/AZ county equivalents plus every other state & DC passed (${targets.length} total).`);
+    }
     for(const width of [390,320]) {
       await page.setViewportSize({width,height:844});
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));

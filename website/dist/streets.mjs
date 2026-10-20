@@ -23,6 +23,14 @@ export function colorExpression(colors) {
   return pairs.length?['match',['get','area'],...pairs,'#cbd0ce']:'#cbd0ce';
 }
 
+export function countySourceData(counties) {
+  // Vector tiling converts numeric-looking feature IDs to numbers. Keep the
+  // canonical five-character FIPS in a property for picking and highlighting.
+  return {...counties,features:counties.features.map(feature=>({...feature,
+    properties:{...feature.properties,fips:feature.id}
+  }))};
+}
+
 export async function createStreetMap({container,counties,selected,onSelect,onStatus}) {
   const map=new Map({container,style:'https://tiles.openfreemap.org/styles/liberty',
     bounds:boundsFor(selected),fitBoundsOptions:{padding:35,maxZoom:11},
@@ -39,12 +47,12 @@ export async function createStreetMap({container,counties,selected,onSelect,onSt
       rejectLoad=error=>{clearTimeout(timer);reject(error);};
       map.once('load',()=>{clearTimeout(timer);resolve();});
     });
-    map.addSource('wage-counties',{type:'geojson',data:counties,attribution:'County boundaries: U.S. Census Bureau'});
+    map.addSource('wage-counties',{type:'geojson',data:countySourceData(counties),promoteId:'fips',attribution:'County boundaries: U.S. Census Bureau'});
     const before=map.getStyle().layers.find(l=>l['source-layer']==='transportation'||l.type==='symbol')?.id;
     map.addLayer({id:'wage-fill',type:'fill',source:'wage-counties',paint:{'fill-color':'#cbd0ce','fill-opacity':0.62}},before);
     map.addLayer({id:'wage-border',type:'line',source:'wage-counties',paint:{'line-color':'#34473c','line-width':0.65,'line-opacity':0.65}},before);
-    map.addLayer({id:'wage-selected',type:'line',source:'wage-counties',filter:['==',['id'],selected.id],paint:{'line-color':'#10271c','line-width':2.5}},before);
-    map.on('click','wage-fill',e=>{if(e.features?.length) onSelect(String(e.features[0].id));});
+    map.addLayer({id:'wage-selected',type:'line',source:'wage-counties',filter:['==',['get','fips'],selected.id],paint:{'line-color':'#10271c','line-width':2.5}},before);
+    map.on('click','wage-fill',e=>{if(e.features?.length) onSelect(e.features[0].properties.fips);});
     map.on('mouseenter','wage-fill',()=>{map.getCanvas().style.cursor='pointer';});
     map.on('mouseleave','wage-fill',()=>{map.getCanvas().style.cursor='';});
     for(const event of ['movestart','resize','sourcedataloading']) map.on(event,()=>{delete container.dataset.ready;});
@@ -57,7 +65,7 @@ export async function createStreetMap({container,counties,selected,onSelect,onSt
       if(!ready) return;
       map.setPaintProperty('wage-fill','fill-color',colorExpression(colors));
       map.setPaintProperty('wage-fill','fill-opacity',state?['case',['==',['get','state'],state],0.62,0.12]:0.62);
-      map.setFilter('wage-selected',['==',['id'],selected.id]);
+      map.setFilter('wage-selected',['==',['get','fips'],selected.id]);
     },
     focus(feature){map.fitBounds(boundsFor(feature),{padding:35,maxZoom:11,duration:0});},
     resize(){map.resize();},
