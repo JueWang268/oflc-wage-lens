@@ -15,9 +15,8 @@
 #occupation-status{grid-column:1/-1;font-size:12px;color:var(--muted);line-height:1.5}
 #occupation-status:empty{display:none}#occupation-status.error{color:#9b1931}
 #occupation-retry{justify-self:start;padding:7px 13px;background:#fff;border:1px solid #bcc9c1;border-radius:4px}
-.map-heading{display:grid;grid-template-columns:auto minmax(130px,1fr) minmax(160px,1.4fr) auto;gap:12px;align-items:end;margin-top:12px}
+.map-heading{display:grid;grid-template-columns:auto minmax(130px,1fr) minmax(160px,1.4fr) auto;gap:12px;align-items:end}
 .map-heading>div{min-width:0}.map-heading label{margin-bottom:6px}.map-heading .map-controls{align-self:end;padding-bottom:4px}
-#map-title{font-size:20px;font-weight:600;line-height:1.3;min-width:0;overflow-wrap:anywhere}
 .map-modes{display:inline-flex;margin:0;max-width:100%;align-self:end;min-height:42px}.map-modes button{padding:8px 10px;font-size:12px}
 .map-section{padding-top:18px}.detail{padding-top:20px}.legend{padding-top:16px}
 #streets{position:absolute;inset:0}#streets[hidden],#map[hidden]{display:none}
@@ -28,4 +27,4 @@
 #streets .maplibregl-ctrl-attrib a{color:#304039}#streets .maplibregl-canvas{outline-offset:-3px}
 .metadata dd{max-width:68%;overflow-wrap:anywhere}
 @media(max-width:1000px){.filter-bar{grid-template-columns:minmax(0,1fr) minmax(244px,1fr)}.map-heading{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'modes zoom' 'state county'}.map-modes{grid-area:modes;justify-self:start}.map-controls{grid-area:zoom;justify-self:end}.state-control{grid-area:state}.search-control{grid-area:county}}
-@media(max-width:760px){.filter-bar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:12px 16px;gap:12px}.filter-bar .occupation-control{grid-column:1/-1;grid-row:2}.filter-bar .occupation-search-control{grid-column:1/-1}.filter-bar .salary-control{grid-column:1/-1}.filter-bar .slider-control{grid-column:1/-1}.filter-bar select{font-size:12px}#map-title{font-size:18px}.map-heading{gap:8px}.map-modes button{padding:7px 8px}.map-section{padding-top:16px}}
+@media(max-width:760px){.filter-bar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:12px 16px;gap:12px}.filter-bar .occupation-control{grid-column:1/-1;grid-row:2}.filter-bar .occupation-search-control{grid-column:1/-1}.filter-bar .salary-control{grid-column:1/-1}.filter-bar .slider-control{grid-column:1/-1}.filter-bar select{font-size:12px}.map-heading{gap:8px}.map-modes button{padding:7px 8px}.map-section{padding-top:16px}}

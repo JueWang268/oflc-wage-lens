@@ -96,9 +96,8 @@
       const item = document.createElement('div'); item.className='legend-item';
       const swatch = document.createElement('div'); swatch.className='swatch'; swatch.style.background=band.color;
       const title = document.createElement('strong'); title.textContent=band.short;
-      const range = document.createElement('small'); range.textContent=band.range;
       const count = document.createElement('div'); count.className='count'; count.textContent=`${stats.counts[i].toLocaleString()} counties`;
-      item.append(swatch,title,range,count); fragment.append(item);
+      item.append(swatch,title,count); fragment.append(item);
     });
     $('legend').replaceChildren(fragment);
     $('coverage').textContent = `${stats.total.toLocaleString()} counties${stats.unknown ? ` · ${stats.unknown} unavailable` : ''} · ${state || '50 states + DC'}`;
@@ -234,7 +233,6 @@
     $('occupation-select').value=entry.code;
     $('occupation-status').textContent=`Loading ${entry.code} · ${entry.title}…`;
     $('occupation-status').className='';$('occupation-retry').hidden=true;
-    $('map-title').textContent=entry.title;
     $('occupation-name').textContent=entry.title;$('occupation-soc').textContent=entry.soc;
     $('onet-row').hidden=entry.kind!=='O*NET';$('occupation-onet').textContent=entry.kind==='O*NET'?entry.code:'';
     $('tooltip').hidden=true;update();

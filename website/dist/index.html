@@ -21,8 +21,7 @@
     <div id="occupation-status" role="status" aria-live="polite"></div><button id="occupation-retry" hidden>Retry</button>
   </section>
   <main>
-    <section class="map-section" aria-labelledby="map-title">
-      <h1 id="map-title">Software developer wages</h1>
+    <section class="map-section" aria-label="County wage comparison">
       <div class="map-heading"><div class="map-modes segmented" aria-label="Map view"><button id="county-view" aria-pressed="true" disabled>Counties</button><button id="street-view" aria-pressed="false" disabled>Streets &amp; places</button></div><div class="state-control"><label for="state">State</label><select id="state"><option value="">United States</option></select></div><div class="search-control"><label for="county-search">County</label><input id="county-search" type="search" list="county-list" placeholder="County name or state" autocomplete="off"><datalist id="county-list"></datalist></div><div class="map-controls"><button id="zoom-in" title="Zoom in" aria-label="Zoom in"><i data-lucide="plus"></i></button><button id="zoom-out" title="Zoom out" aria-label="Zoom out"><i data-lucide="minus"></i></button><button id="reset" title="Reset map" aria-label="Reset map"><i data-lucide="maximize"></i></button></div></div>
       <section class="legend" aria-label="Wage comparison legend" id="legend"></section>
       <div class="map-wrap"><p id="loading" role="status">Loading county wages…</p><svg id="map" viewBox="0 0 1000 640" role="img" aria-label="County wage comparison map. County search provides the same details by keyboard."></svg><div id="streets" aria-label="Street map with county wage colors" hidden></div><div id="street-status" role="status" hidden></div><div id="tooltip" hidden></div></div>
