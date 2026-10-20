@@ -28,6 +28,26 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
   assert.equal(await page.locator('.legend-item small').count(),0);
   assert.equal(await page.locator('.legend-item strong').count(),5);
   assert.equal(await page.locator('.legend-item .count').count(),5);
+  assert.equal(await page.locator('#selected-state').count(),0);
+  assert.equal(await page.getByRole('combobox',{name:'State',exact:true}).count(),1);
+  assert.equal(await page.getByRole('combobox',{name:'County',exact:true}).count(),1);
+  for(const id of ['state','county-search']) {
+    assert.equal(await page.locator(`label[for="${id}"]`).evaluate(el=>getComputedStyle(el).clipPath),'inset(50%)');
+  }
+  assert.equal(await page.locator('#next-level strong').innerText(),'needed');
+  assert.match(await page.locator('#next-level').innerText(),/^\$[\d,.]+ needed per year to reach Level III\.$/);
+  await page.locator('#hour').click();
+  assert.match(await page.locator('#next-level').innerText(),/^\$[\d,.]+ needed per hour to reach Level III\.$/);
+  await page.locator('#year').click();
+  async function assertInlineLegend() {
+    const rows=await page.locator('.legend-item').evaluateAll(items=>items.map(item=>{
+      const label=item.querySelector('strong').getBoundingClientRect();
+      const count=item.querySelector('.count').getBoundingClientRect();
+      return Math.abs(label.bottom-count.bottom)<4 && count.left>=label.right;
+    }));
+    assert.ok(rows.every(Boolean),'Each county count stays beside its level');
+  }
+  await assertInlineLegend();
   assert.equal(await page.locator('#result-label').innerText(),'Level II');
   assert.match(await page.locator('#county-name').innerText(),/Travis/);
   const initial=await page.locator('#result-label').innerText();
@@ -40,6 +60,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
   await page.locator('#salary').fill('');assert.equal(await page.locator('#salary-error').isVisible(),true);assert.equal(await page.locator('#download').isDisabled(),true);
   assert.equal(await page.locator('.county').first().getAttribute('fill'),'#cbd0ce');
   await page.locator('#salary').fill('300000');assert.equal(await page.locator('#result-label').innerText(),'Level IV+');
+  assert.equal(await page.locator('#next-level strong').count(),0);
   await page.locator('#state').selectOption('CA');assert.match(await page.locator('#coverage').innerText(),/58 counties/);
   assert.ok(await page.locator('#map>g').getAttribute('transform'));
   await page.locator('#county-search').fill('Travis County, TX');await page.locator('#county-search').press('Enter');
@@ -56,6 +77,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:4178';
     const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).map(el=>[el.tagName,el.id,el.className,el.getBoundingClientRect().right]).filter(row=>row[0]!=='path'));
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),JSON.stringify(overflow.slice(0,20)));
     assert.equal(await page.locator('.threshold').count(),4);
+    await assertInlineLegend();
   }
   // Simulate a future visit without requiring changes to the machine clock.
   const future=await browser.newPage();
