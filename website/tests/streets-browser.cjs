@@ -82,7 +82,7 @@ const output=path.join(__dirname,'../test-results');
         for(const y of [0.5,0.35,0.65,0.2,0.8]) {
           for(const x of [0.5,0.35,0.65,0.2,0.8]) {
             await page.mouse.click(rect.x+rect.width*x,rect.y+rect.height*y);
-            if((await page.locator('#selected-state').innerText()).endsWith(target.id)) {picked=true;break;}
+            if(new URL(page.url()).searchParams.get('county')===target.id) {picked=true;break;}
           }
           if(picked) break;
         }

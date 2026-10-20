@@ -19,6 +19,12 @@
 .map-heading>div{min-width:0}.map-heading label{margin-bottom:6px}.map-heading .map-controls{align-self:end;padding-bottom:4px}
 .map-modes{display:inline-flex;margin:0;max-width:100%;align-self:end;min-height:42px}.map-modes button{padding:8px 10px;font-size:12px}
 .map-section{padding-top:18px}.detail{padding-top:20px}.legend{padding-top:16px}
+.map-heading label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.legend{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 8px}
+.legend-item{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:baseline;column-gap:6px;row-gap:7px}
+.legend-item .swatch{grid-column:1/-1;margin:0}
+.legend-item strong{font-size:12px;white-space:nowrap}
+.legend-item .count{font-size:11px;margin:0;white-space:nowrap}
 #streets{position:absolute;inset:0}#streets[hidden],#map[hidden]{display:none}
 .map-wrap:has(#streets:not([hidden])){min-height:420px}
 #street-status{position:absolute;top:12px;left:12px;right:12px;z-index:2;padding:10px 12px;background:#fff;border:1px solid #bcc9c1;border-radius:4px;font-size:13px;line-height:1.5;box-shadow:0 2px 6px #0001}

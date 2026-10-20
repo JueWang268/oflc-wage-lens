@@ -105,7 +105,6 @@
   }
   function updateDetail() {
     const p = selected.properties, area=wageAreas[p.area], level=tier(salary,area), rates=thresholds(area);
-    $('selected-state').textContent=`${data.states[p.state].toUpperCase()} / ${selected.id}`;
     $('county-name').textContent=p.name;
     $('wage-area').textContent=data.areas[p.area]?.name || 'No unambiguous OFLC wage-area match';
     $('result-label').textContent=occupationBusy?'Loading occupation…':occupationError?'Occupation data unavailable':level === null ? (validSalary(salary)?'Wage data unavailable':'Enter a valid salary') : bands[level].label;
@@ -127,7 +126,10 @@
     $('thresholds').replaceChildren(fragment);
     if (level===null) $('next-level').textContent=occupationBusy?'Loading wage thresholds.':occupationError?'Retry loading this occupation to compare wages.':!validSalary(salary)?'No wage level inferred.':unavailableReason(area);
     else if (level===4) $('next-level').textContent=`${money((salary-rates[3])/(unit==='year'?1:2080),unit==='hour')} above the Level IV threshold. OFLC has no Level V.`;
-    else $('next-level').textContent=`${money((rates[level]-salary)/(unit==='year'?1:2080),unit==='hour')} ${unit==='year'?'per year':'per hour'} to reach Level ${['I','II','III','IV'][level]}.`;
+    else {
+      const needed=document.createElement('strong'); needed.textContent='needed';
+      $('next-level').replaceChildren(`${money((rates[level]-salary)/(unit==='year'?1:2080),unit==='hour')} `,needed,` ${unit==='year'?'per year':'per hour'} to reach Level ${['I','II','III','IV'][level]}.`);
+    }
     paths.classed('selected',f=>f.id===selected.id).filter(f=>f.id===selected.id).raise();
     $('source-unit').textContent=area?.unit==='year'?'Annual (hourly equivalent)':area?.unit==='hour'?'Hourly':'Unavailable';
     updateStreetMap();
