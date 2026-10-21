@@ -12,6 +12,19 @@ for city/town labels and roads above the wage shading. This optional view loads
 OpenFreeMap tiles over the internet and requires WebGL. No accounts, API keys
 or analytics are used. County comparisons remain available if tiles fail.
 
+## Explore the map
+
+1. Type an occupation title or code & select an autocomplete suggestion, or use the occupation dropdown.
+2. Enter annual or hourly base pay. The map recolors immediately; each level's county count appears beside its name.
+3. Select a state to focus the map, search for a county, or click a county in either **Counties** or **Streets & places** view.
+4. Read the selected county's wage area, four thresholds & pay needed to reach the next level in the side panel. At or above Level IV, the panel shows the amount above that threshold instead.
+5. Export the filtered comparisons with **County CSV**, or bookmark the URL to preserve salary, occupation & selected county.
+
+The compact controls & inline legend adapt to desktop and mobile. State and
+county controls retain accessible names without visible labels. County names
+and wage areas appear in the detail panel; five-digit FIPS identifiers remain
+in the data, selection URLs & CSV exports rather than the visible header.
+
 ## Run
 
 Requires Node.js 22+:
@@ -27,7 +40,7 @@ with `file://` will not work because browsers restrict local JSON fetches.
 ## GitHub Pages
 
 The parent repository's `.github/workflows/pages.yml` validates the map and
-runs Firefox interaction tests before publishing only `website/dist/` to
+runs Firefox interaction tests & Chromium street-map checks before publishing only `website/dist/` to
 GitHub Pages. Push website changes to `main` to update the live map. Pull
 requests run the checks without deployment. No credentials, raw data archives,
 private-preview configuration or unrelated project files enter the Pages artifact.
@@ -116,6 +129,12 @@ check all 449,440 source rows, annual/hourly rate handling, exact boundaries,
 O*NET mapping, preserved worksite/salary selections, response races and retries.
 Screenshots go to
 ignored `test-results/`. No test submits user data anywhere.
+
+Layout checks cover accessible control names, inline county counts & the annual
+and hourly next-level wording. Street-map tests exercise 130 actual canvas
+county selections: all 82 county equivalents in CT, CA & AZ, plus one in every
+other state & DC. They verify the selected county, URL, search field & wage
+thresholds, and preserve leading-zero FIPS identifiers for all 3,144 polygons.
 
 ## Repository layout
 
