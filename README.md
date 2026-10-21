@@ -1,24 +1,40 @@
 # OFLC Wage Lens
 
-A Firefox extension for comparing a job's USD base salary with the 2026-27 OFLC wage levels for **Software Developers, O*NET 15-1252.00 / SOC 15-1252**. The panel appears at the top right of detected job pages. The toolbar button toggles it on other pages.
+Explore how a base salary compares with U.S. Department of Labor OFLC wage benchmarks, county by county or directly on a job posting. Open source, with local salary calculations & no account required.
+
+**[Open the interactive wage map](https://juewang268.github.io/oflc-wage-lens/)** | [Firefox setup](#install-in-firefox) | [Data updates](UPDATING_DATA.md)
+
+| | Wage Atlas website | Wage Lens Firefox extension |
+| --- | --- | --- |
+| Use | Compare a salary across the country | Check a job posting's detected pay & location |
+| Occupations | 848 SOC occupations & 997 O*NET entries | Software Developers, SOC 15-1252 / O*NET 15-1252.00 |
+| Geography | 3,144 counties & county equivalents, 50 states + DC | OFLC wage areas, counties & supported city names |
+| Pay | Annual or hourly base salary | Detected salary ranges & manual overrides |
+
+**Data: OFLC 2026-27, snapshot October 2026.** These are salary comparisons against four published wage thresholds, not official wage-level or visa eligibility determinations. Base salary excludes bonuses & equity. There is no Level V.
 
 ## County map website
 
-**[Open Wage Atlas](https://juewang268.github.io/oflc-wage-lens/)**
+1. Search for an occupation by title or code & choose an autocomplete result. Software Developers (15-1252) is the default.
+2. Enter a base salary & select annual or hourly pay.
+3. Click a county in either map view, search for a county, or filter by state. The side panel shows the county, its wage area, all four thresholds & the additional pay needed to reach the next level.
+4. Switch to **Streets & places** for city/town names & roads, or export the current state-filtered county comparisons as CSV. Copy the page URL to preserve salary, occupation & selected county.
 
-The open-source companion in [`website/`](website/README.md) maps a base salary
-across 3,144 counties and county equivalents in all 50 states and DC. It supports
-all 848 SOC occupations and 997 O*NET entries in the downloaded all-industries
-data, defaulting to Software Developers (15-1252). Search by title or code.
-The occupation selector applies to the website; the Firefox extension remains
-focused on Software Developers. Five bands
-run from deep red (below Level I) through red, yellow and light green to green
-(Level IV or above). There is no Level V. Selecting a county shows all four
-thresholds, with annual/hourly controls, state filtering, county search and CSV export.
-Switch to **Streets & places** for city/town names and roads above the county
-colors. This optional view uses OpenFreeMap tiles and needs internet access &
-WebGL. The default county overview uses only bundled assets. See the website
-README for map attribution, third-party request details and test coverage.
+| Color | Salary band |
+| --- | --- |
+| Deep red | Below Level I |
+| Red | Level I to below II |
+| Yellow | Level II to below III |
+| Light green | Level III to below IV |
+| Green | Level IV or above |
+| Gray | Unavailable or invalid comparison |
+
+The compact legend shows county counts beside each level. County selections
+update the same detail panel in both views, including Connecticut planning
+regions. **Streets & places** needs internet access & WebGL for OpenFreeMap
+tiles; the default county overview uses only bundled assets. See
+[`website/README.md`](website/README.md) for attribution, privacy details,
+rebuilding & test coverage.
 
 Run `node website/scripts/serve.cjs`, then open http://127.0.0.1:4178.
 The website uses the October 2026 OFLC snapshot and 2025 Census boundaries;
@@ -28,6 +44,9 @@ conversion, does not change the extension, and does not automatically
 download new wages. See the website README for rebuilding and testing.
 
 ## Install in Firefox
+
+The floating panel appears at the top right of detected individual job pages.
+The toolbar button toggles it manually on other supported pages.
 
 1. In Firefox 142 or later, open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on** and select `extension/manifest.json` in this folder.
@@ -135,9 +154,11 @@ licenses and DOL source attribution are retained separately in
 
 ## Release status
 
-This is a tested desktop Firefox release candidate. It has not been signed by
-Mozilla or published to GitHub. See [RELEASING.md](RELEASING.md) for remaining
-steps. [PRIVACY.md](PRIVACY.md)
+The source is public on GitHub & Wage Atlas is live on GitHub Pages. The
+desktop Firefox extension remains an unsigned release candidate: it has not
+been signed by Mozilla, and no GitHub Release is published. Temporary loading
+is supported; a permanent Firefox installation requires signing. See
+[RELEASING.md](RELEASING.md) for remaining release steps. [PRIVACY.md](PRIVACY.md)
 describes permissions and local-only processing. [SECURITY.md](SECURITY.md)
 documents the remaining upstream development-tool advisory. Do not describe the
 entire dependency tree as vulnerability-free.
@@ -173,6 +194,7 @@ personal profile. See [CONTRIBUTING.md](CONTRIBUTING.md).
 Source layout:
 
 - `extension/`: loadable Firefox extension, with bundled data, icon assets and licenses.
+- `website/`: Wage Atlas static site, occupation datasets, map builders & browser tests.
 - `scripts/`: reproducible CSV transformation, Lucide asset generation and ZIP packaging.
 - `tests/`: unit tests, synthetic job fixture and Firefox UI tests.
 - `dist/`: unsigned distributable ZIP.
